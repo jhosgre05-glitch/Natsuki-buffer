@@ -864,7 +864,7 @@ namespace {
         // hidden in practice mode (practice runs can't be submitted, and on phones it sat on the
         // checkpoint buttons); always shown in normal mode while the buffer is on
         auto* layer = GameManager::get()->m_playLayer;
-        buf.watermark->setVisible(buf.enabled && !(layer && layer->m_isPracticeMode));
+        buf.watermark->setVisible(false);
         buf.watermark->setString(fmt::format("CBF  |  {}", stageText()).c_str());
     }
 
@@ -6304,24 +6304,6 @@ namespace online {
         autoplay.takeOver = Mod::get()->getSavedValue<bool>("autoplay-takeover", false);
         // the label stays the whole time autoplay is on (also while you play with Take Over),
         // so a recording always shows the run wasn't played by hand
-        autoplay.tag = CCLabelBMFont::create(autoplay.takeOver ? "AUTOPLAY - TAKE OVER" : "AUTOPLAY", "bigFont.fnt");
-        // v3.0.1: the label always shows (viewers have to be able to tell it isn't a real run), but
-        // it can be small, in the bottom corner, for showcases
-        if (Mod::get()->getSettingValue<std::string>("autoplay-label") == "Small") {
-            autoplay.tag->setScale(0.32f);
-            autoplay.tag->setColor({ 255, 255, 255 });
-            autoplay.tag->setOpacity(150);
-            autoplay.tag->setAnchorPoint({ 1.f, 0.f });
-            autoplay.tag->setPosition({ win.width - 6.f, 4.f });
-        }
-        else {
-            autoplay.tag->setScale(0.45f);
-            autoplay.tag->setColor({ 255, 215, 90 });
-            autoplay.tag->setOpacity(220);
-            autoplay.tag->setPosition({ win.width / 2.f, win.height - 26.f });
-        }
-        autoplay.tag->setID("autoplay-label"_spr);
-        layer->addChild(autoplay.tag, 1000);
         say("autoplay on: the level is in test mode, nothing is saved as progress");
         autoplay.trailNode = CCDrawNode::create();
         autoplay.trailNode->setID("autoplay-trail"_spr);
@@ -10732,11 +10714,9 @@ private:
 
     void onTakeOver(CCObject*) {
         bool on = !Mod::get()->getSavedValue<bool>("autoplay-takeover", false);
-        Mod::get()->setSavedValue("autoplay-takeover", on);
+        Mod::get()->setSavedValue("autoplay-takeover", off);
         if (autoplay.active) {
-            autoplay.takeOver = on;
-            if (autoplay.tag) {
-                autoplay.tag->setString(on ? "AUTOPLAY - TAKE OVER" : "AUTOPLAY");
+            autoplay.takeOver = off;
             }
         }
         say("autoplay take over {}", on ? "on (nothing is saved, the label stays on screen)" : "off");
@@ -11173,34 +11153,7 @@ class $modify(BufPlayLayer, PlayLayer) {
         buf.watermark->setZOrder(1000);
         this->addChild(buf.watermark);
         buf.usedThisAttempt = false;
-        refreshWatermark();
-
-        buf.autoTag = CCLabelBMFont::create("AUTO INPUTS ON", "bigFont.fnt");
-        buf.autoTag->setScale(0.24f);
-        buf.autoTag->setColor({ 255, 120, 120 });
-        buf.autoTag->setOpacity(153);  // 60%, like the console; still readable in a recording
-        buf.autoTag->setAnchorPoint({ 1.f, 0.f });
-        buf.autoTag->setPosition({ win.width - 6.f, 4.f });
-        buf.autoTag->setZOrder(1000);
-        this->addChild(buf.autoTag);
-        refreshAutoTag();
-
-        buf.hintLabel = CCLabelBMFont::create("", "bigFont.fnt");
-        buf.hintLabel->setColor({ 255, 170, 215 });
-        buf.hintLabel->setOpacity(0);
-        buf.hintLabel->setPosition({ win.width / 2.f, win.height - 40.f });
-        buf.hintLabel->setZOrder(1000);
-        this->addChild(buf.hintLabel);
-
-        buf.heatNode = nullptr;
-        if (m_progressBar) {
-            buf.heatNode = CCDrawNode::create();
-            m_progressBar->addChild(buf.heatNode, 5);
-            refreshHeatmap();
-        }
-
-        // Path view lives in the object layer, so it scrolls with the level.
-        buf.pathNode = CCDrawNode::create();
+        refreshWatermark()
         // v2.48: above the level's shader effects when it has that layer; inside the shader
         // layer, dark or glow shaders could hide the path completely.
         (m_aboveShaderObjectLayer ? m_aboveShaderObjectLayer : m_objectLayer)->addChild(buf.pathNode, 9999);
